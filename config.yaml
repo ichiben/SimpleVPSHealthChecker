@@ -1,0 +1,8 @@
+log_file: vps_health.log
+targets:
+- check_interval: 5
+  hostname: localhost
+  max_retries: 3
+  port: 8080
+telegram_chat_id: ''
+telegram_token: ''
