@@ -1,6 +1,5 @@
 import yaml
 import os
-from pathlib import Path
 
 CONFIG_FILE = "config.yaml"
 
@@ -13,23 +12,31 @@ DEFAULT_CONFIG = {
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
-        save_config(DEFAULT_CONFIG)
-        return DEFAULT_CONFIG
+        save_config(DEFAULT_CONFIG.copy())
+        return DEFAULT_CONFIG.copy()
     
     with open(CONFIG_FILE, 'r') as f:
         try:
             config = yaml.safe_load(f)
+            if not isinstance(config, dict):
+                return DEFAULT_CONFIG.copy()
             # Ensure default keys exist if missing
             for k, v in DEFAULT_CONFIG.items():
                 if k not in config:
                     config[k] = v
             return config
         except yaml.YAMLError:
-            return DEFAULT_CONFIG
+            return DEFAULT_CONFIG.copy()
 
 def save_config(config):
-    with open(CONFIG_FILE, 'w') as f:
-        yaml.dump(config, f, default_flow_style=False)
+    file_descriptor = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(file_descriptor, 'w') as f:
+        yaml.safe_dump(config, f, default_flow_style=False)
+    try:
+        if os.name != "nt":
+            os.chmod(CONFIG_FILE, 0o600)
+    except OSError:
+        pass
 
 def add_target(hostname, port, check_interval, max_retries):
     config = load_config()
