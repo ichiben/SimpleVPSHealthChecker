@@ -33,9 +33,7 @@ def _is_monitor_process(proc_info):
 def _mask_secret(secret):
     if not secret:
         return "Not set"
-    if len(secret) <= 8:
-        return "*" * len(secret)
-    return f"{secret[:4]}...{secret[-4:]}"
+    return "[hidden]"
 
 def is_monitor_running():
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
