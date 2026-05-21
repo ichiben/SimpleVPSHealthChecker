@@ -30,7 +30,7 @@ def _is_monitor_process(proc_info):
     script = _normalize_path(cmdline[1])
     return executable == PYTHON_EXECUTABLE and script == MONITOR_SCRIPT
 
-def _mask_secret(secret):
+def _format_secret_display(secret):
     if not secret:
         return "Not set"
     return "[hidden]"
@@ -131,8 +131,8 @@ def config_telegram_menu():
     current_token = config.get("telegram_token", "")
     current_chat = config.get("telegram_chat_id", "")
     
-    console.print(f"Current Token: {_mask_secret(current_token)}")
-    console.print(f"Current Chat ID: {_mask_secret(current_chat)}")
+    console.print(f"Current Token: {_format_secret_display(current_token)}")
+    console.print(f"Current Chat ID: {_format_secret_display(current_chat)}")
     
     new_token = Prompt.ask(
         "Enter Telegram Bot Token (leave blank to keep current)",

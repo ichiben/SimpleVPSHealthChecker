@@ -1,6 +1,5 @@
 import yaml
 import os
-from pathlib import Path
 
 CONFIG_FILE = "config.yaml"
 
@@ -30,6 +29,12 @@ def load_config():
             return DEFAULT_CONFIG.copy()
 
 def save_config(config):
+    if os.name != "nt" and os.path.exists(CONFIG_FILE):
+        try:
+            os.chmod(CONFIG_FILE, 0o600)
+        except OSError:
+            pass
+
     file_descriptor = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(file_descriptor, 'w') as f:
         yaml.safe_dump(config, f, default_flow_style=False)
