@@ -136,17 +136,19 @@ def config_telegram_menu():
     console.print(f"Current Token: {_mask_secret(current_token)}")
     console.print(f"Current Chat ID: {_mask_secret(current_chat)}")
     
-    token_to_save = Prompt.ask(
+    new_token = Prompt.ask(
         "Enter Telegram Bot Token (leave blank to keep current)",
         password=True,
-        default=current_token,
+        default="",
         show_default=False
     )
-    chat_to_save = Prompt.ask(
+    new_chat_id = Prompt.ask(
         "Enter Telegram Chat ID (leave blank to keep current)",
-        default=current_chat,
+        default="",
         show_default=False
     )
+    token_to_save = new_token if new_token else current_token
+    chat_to_save = new_chat_id if new_chat_id else current_chat
     
     config_manager.update_telegram_settings(token_to_save, chat_to_save)
     console.print("[green]Telegram settings updated successfully![/green]")
