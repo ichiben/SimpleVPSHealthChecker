@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import psutil
+from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, IntPrompt
@@ -11,11 +12,35 @@ from rich.align import Align
 import config_manager
 
 console = Console()
+APP_DIR = Path(__file__).resolve().parent
+MONITOR_SCRIPT = str((APP_DIR / "monitor.py").resolve())
+PYTHON_EXECUTABLE = str(Path(sys.executable).resolve())
+
+def _normalize_path(path_value):
+    try:
+        return str(Path(path_value).resolve())
+    except Exception:
+        return str(path_value)
+
+def _is_monitor_process(proc_info):
+    cmdline = proc_info.get('cmdline') or []
+    if len(cmdline) < 2:
+        return False
+    executable = _normalize_path(cmdline[0])
+    script = _normalize_path(cmdline[1])
+    return executable == PYTHON_EXECUTABLE and script == MONITOR_SCRIPT
+
+def _mask_secret(secret):
+    if not secret:
+        return "Not set"
+    if len(secret) <= 8:
+        return "*" * len(secret)
+    return f"{secret[:4]}...{secret[-4:]}"
 
 def is_monitor_running():
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            if proc.info['cmdline'] and 'monitor.py' in proc.info['cmdline'] and sys.executable in proc.info['cmdline']:
+            if _is_monitor_process(proc.info):
                 return proc.info['pid']
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -29,10 +54,12 @@ def start_monitor():
         
     try:
         if sys.platform == "win32":
-            subprocess.Popen([sys.executable, "monitor.py"], 
+            subprocess.Popen([sys.executable, MONITOR_SCRIPT],
+                             cwd=str(APP_DIR),
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008) # DETACHED_PROCESS = 0x00000008
         else:
-            subprocess.Popen([sys.executable, "monitor.py"], 
+            subprocess.Popen([sys.executable, MONITOR_SCRIPT],
+                             cwd=str(APP_DIR),
                              start_new_session=True, 
                              stdout=subprocess.DEVNULL, 
                              stderr=subprocess.DEVNULL)
@@ -106,13 +133,15 @@ def config_telegram_menu():
     current_token = config.get("telegram_token", "")
     current_chat = config.get("telegram_chat_id", "")
     
-    console.print(f"Current Token: {current_token if current_token else 'Not set'}")
-    console.print(f"Current Chat ID: {current_chat if current_chat else 'Not set'}")
+    console.print(f"Current Token: {_mask_secret(current_token)}")
+    console.print(f"Current Chat ID: {_mask_secret(current_chat)}")
     
-    token = Prompt.ask("Enter Telegram Bot Token", default=current_token)
-    chat_id = Prompt.ask("Enter Telegram Chat ID", default=current_chat)
+    token = Prompt.ask("Enter Telegram Bot Token (leave blank to keep current)", password=True, default="")
+    chat_id = Prompt.ask("Enter Telegram Chat ID (leave blank to keep current)", default="")
+    token_to_save = token if token else current_token
+    chat_to_save = chat_id if chat_id else current_chat
     
-    config_manager.update_telegram_settings(token, chat_id)
+    config_manager.update_telegram_settings(token_to_save, chat_to_save)
     console.print("[green]Telegram settings updated successfully![/green]")
 
 def main_menu():
