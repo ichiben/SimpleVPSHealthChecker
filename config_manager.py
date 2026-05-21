@@ -30,7 +30,8 @@ def load_config():
             return DEFAULT_CONFIG.copy()
 
 def save_config(config):
-    with open(CONFIG_FILE, 'w') as f:
+    file_descriptor = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(file_descriptor, 'w') as f:
         yaml.safe_dump(config, f, default_flow_style=False)
     try:
         if os.name != "nt":
