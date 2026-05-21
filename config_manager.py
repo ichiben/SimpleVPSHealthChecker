@@ -33,7 +33,8 @@ def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         yaml.safe_dump(config, f, default_flow_style=False)
     try:
-        os.chmod(CONFIG_FILE, 0o600)
+        if os.name != "nt":
+            os.chmod(CONFIG_FILE, 0o600)
     except OSError:
         pass
 
